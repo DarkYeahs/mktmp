@@ -1,38 +1,55 @@
 #! /usr/bin/env node
 
-const program    = require('commander')
-const path       = require('path')
-const fs         = require('fs')
+const program   = require('commander')
+const path      = require('path')
+const fs        = require('fs')
+const colors    = require('colors')
 
 program
     .version(require('../package').version, '-v, --version')
-    .usage('[options] <file ...>')
+    .usage('[options] <argv>')
     .option('-f, --filename <filename>', 'file name')
+    .option('-p, --pathname <pathname>', 'relative path name')
     .parse(process.argv)
 
 program.on('--help', function(){
     console.log('')
     console.log('Examples:');
-    console.log('  $ custom-help --help');
-    console.log('  $ custom-help -h');
+    console.log('  $ mktmp --help');
+    console.log('  $ mktmp -h');
 })
 
-if (!program.filename) {
+let filename = process.argv[2]
+
+function make_red(txt) {
+    return colors.red(txt)
+}
+
+if (!process.argv.slice(2).length) {
+    program.outputHelp(make_red)
+    return
+}
+
+if (!(program.filename || filename)) {
     throw new Error('请输入文件名')
 }
+
+if (program.filename) filename = program.filename
 
 const CURRENT_DIR = process.cwd()
 let relativePath = ''
 
 if (CURRENT_DIR.indexOf('src') > -1) relativePath = './'
 else relativePath = './src'
+
+if (program.pathname) relativePath = program.pathname
+
 const TMP_PATH = path.resolve(__dirname, '../tmp')
-const VUE_DIR = path.resolve(CURRENT_DIR, relativePath, `./components/${program.filename}.vue`)
-const SCSS_DIR = path.resolve(CURRENT_DIR, relativePath, `./styles/${program.filename}.scss`)
+const VUE_DIR = path.resolve(CURRENT_DIR, relativePath, `./components/${filename}.vue`)
+const SCSS_DIR = path.resolve(CURRENT_DIR, relativePath, `./styles/${filename}.scss`)
 const VUE_TMP_DIR = path.resolve(TMP_PATH, './tmp.vue')
 const SCSS_TMP_DIR = path.resolve(TMP_PATH, './tmp.scss')
-
-const className = program.filename.replace(/_/g, '-')
+const className = filename.replace(/_/g, '-')
 
 let vueCopy = copyFile(VUE_TMP_DIR, VUE_DIR)
 let scssCopy = copyFile(SCSS_TMP_DIR, SCSS_DIR)
@@ -68,7 +85,7 @@ function writeFile(path, content) {
             return
         }
         content = content.replace(/\{\$className\}/g, className)
-        content = content.replace(/\{\$fileName\}/g, program.filename)
+        content = content.replace(/\{\$fileName\}/g, filename)
         fs.writeFile(path, content, (err) => {
             if(err) {
                 reject(err)
@@ -82,23 +99,11 @@ function writeFile(path, content) {
     return promise
 }
 
-function copyFile(tmpPath, aimsPath) {
-    const promise = new Promise((resolve, reject) => {
-        readFile(tmpPath)
-            .then(data => {
-                writeFile(aimsPath, data)
-                    .then(() => {
-                        resolve()
-                    })
-                    .catch(e => {
-                        reject(e)
-                    })
-            })
-            .catch(e => {
-                reject(e)
-            })
-    })
+async function copyFile(tmpPath, aimsPath) {
 
-    return promise
+    const readRes = await readFile(tmpPath)
+    const writeRes = await writeFile(aimsPath, readRes)
+
+    return writeRes
 }
     
