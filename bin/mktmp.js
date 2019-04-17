@@ -1,9 +1,6 @@
 #! /usr/bin/env node
 
 const program   = require('commander')
-const path      = require('path')
-const fs        = require('fs')
-const colors    = require('colors')
 
 program
     .version(require('../package').version, '-v, --version')
