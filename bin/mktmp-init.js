@@ -21,26 +21,26 @@ let questionList = [
         type: 'input',
         name: 'projectName',
         message: 'project name:',
-      },
-      {
-          type: 'list',
-          name: 'platform',
-          message: 'platform:',
-          choices: ['m', 'pc']
-      },
-      {
-          type: 'list',
-          name: 'type',
-          message: 'type:',
-          choices: [year, 'daily']
-      }
+    },
+    {
+        type: 'list',
+        name: 'platform',
+        message: 'platform:',
+        choices: ['m', 'pc']
+    },
+    {
+        type: 'list',
+        name: 'type',
+        message: 'type:',
+        choices: [year, 'daily']
+    }
 ]
 
 if (program.rawArgs[3] === '-h' || program.rawArgs[3] === '--help') {
     program.outputHelp()
     process.exit(0)
 }
-
+// 如果用户使用自定义模板，则不提示是否使用router
 if (!template) {
     questionList.push(
         {
@@ -56,7 +56,7 @@ inquirer.prompt(questionList)
     .then((answers) => {
         handleUserAnswer(answers)
     })
-
+// 判断当前使用的template
 function handleTemplate(template, needRouter) {
     if (!template) {
         if (needRouter) return defaultRouterTemplateURL
@@ -65,7 +65,10 @@ function handleTemplate(template, needRouter) {
 
     return template
 }
-
+/**
+ * 
+ * @param {Object} answers 用户输入信息
+ */
 async function handleUserAnswer(answers) {
     const url = handleTemplate(template, answers.needRouter)
     const aimsPath = path.resolve(CURRENT_PATH, answers.projectName)
@@ -75,18 +78,21 @@ async function handleUserAnswer(answers) {
     }
 
     await execa('git', ['clone', url, answers.projectName])
-    // await execa('cd', [answers.projectName])
-    // await execa('cd', ['..'])
     if (!template) await changePackageFile(path.resolve(aimsPath, 'package.json'), answers)
+    // 删除template下clone存在的.git目录信息
     rm(`${answers.projectName}/.git`)
-    console.log(`cd ${answers.projectName} & npm install`)
+    console.log(`   $ cd ${answers.projectName} & npm install`)
     process.exit(0)
 }
-
+/**
+ * 
+ * @param {String} path package.json文件目录
+ * @param {Object} answers 用户输入信息
+ */
 async function changePackageFile(path, answers) {
     let content = await readFile(path)
     const promise = new Promise((resolve, reject) => {
-
+        // 替换package.json文件中的参数
         content = content.replace('${template}', answers.projectName)
                         .replace('${platform}', answers.platform)
                         .replace('${type}', answers.type)

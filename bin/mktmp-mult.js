@@ -1,11 +1,9 @@
 #! /usr/bin/env node
 
-// const program   = require('commander')
 const path      = require('path')
-const readline = require('readline')
+const inquirer  = require('inquirer')
 const copyFile = require('../src/copyFile')
 
-const rl = readline.createInterface(process.stdin, process.stdout)
 const CURRENT_DIR = process.cwd()
 const TMP_PATH = path.resolve(__dirname, '../tmp')
 const VUE_TMP_DIR = path.resolve(TMP_PATH, './tmp.vue')
@@ -24,14 +22,20 @@ const RELATIVEPATH = CURRENT_DIR.indexOf('src') > -1 ? './' : './src'
 //     console.log('  $ mktmp -h');
 // })
 
-rl.question('Enter a list of file names separated by commas: ',  function(fileStr){
-    let fileList = fileStr.split(',')
-    for(let i = 0, len = fileList.length; i < len; i++) {
-        createFile(fileList[i])
+inquirer.prompt([
+    {
+        
+        type: 'input',
+        name: 'filelist',
+        message: 'Enter a list of file names separated by commas: ',
     }
-    rl.close();
-    // process.exit(1)
-});
+])
+    .then(({filelist}) => {
+        let fileList = filelist.split(',')
+        for(let i = 0, len = fileList.length; i < len; i++) {
+            createFile(fileList[i])
+        }
+    })
 
 
 
